@@ -5,6 +5,7 @@ folders = ["ZAsmt", "ZTrans"]
 ZAsmt = ["AdditionalPropertyAddress", "BKManagedSpecific", "Building", "BuildingAreas", "MailAddress", "Main", "Name", "SaleData", "TaxDistrict", "TaxExemption", "TypeConstruction", "Value"]
 ZTrans = ["BKManagedSpecific", "BuyerMailAddress", "BuyerName", "ForeclosureNameAddress", "Main", "SellerMailAddress", "SellerName", "SellerNameDescriptionCode"]
 
+file_layout = {"ZAsmt": ZAsmt, "ZTrans": ZTrans}
 vars_interest = {"Main": ["ImportParcelID", "RowID", "TransID", "AssessorParcelNumber", "State", "County", "PropertyCity", "PropertyZip", "PropertyZip4", "PropertyAddressCensusTrackAndBlock",
             "OriginalPropertyFullStreetAddress", "PropertyAddressLatitude", "PropertyAddressLongitude", "PropertyZoningSourceCode", "TaxIDNumber", "TaxAmount", "TaxYear", "TaxDelinquencyFlag",
             "TaxDelinquencyAmount", "TaxDelinquencyYear", "LotSizeSquareFeet", "ValueCertDate", "DocumentDate", "DocumentTypeStndCode", "LoanAmount", "LoanAmountStndCode", "MaximumLoanAmount",
@@ -17,7 +18,7 @@ vars_interest = {"Main": ["ImportParcelID", "RowID", "TransID", "AssessorParcelN
             "SellerMailAddressLatitude", "SellerMailAddressLongitude", "SellerMailAddressCensusTrackAndBlock"], "BKManagedSpecific": ["DeedTransType"], "ForeClosureNameAddress": ["FCMailIndividualFullName",
             "FCMailNonIndividualName", "FCMailFullStreetAddress", "FCMailCity", "FCMailState", "FCMailZip", "FCMailZip4"]}
 
-layouts = [asmt_layout, trans_layout]
+layouts = ["asmt_layout", "trans_layout"]
 
 def add_headers_per_layout(files_df, folder, layout_file):
     layout_file = pd.read_excel(layout_file + '.xlsx')
@@ -37,11 +38,39 @@ def add_headers_per_layout(files_df, folder, layout_file):
     #add column headers to the files
     #-----------------
 
-    for file in folder:
-        curr_file = pd.read_csv(folder + '\\' + file + '.txt', sep='|', header=None)
+    for file in file_layout[folder]:
+        try:
+            print(folder + '\\' + file + '.txt')
+            curr_file = pd.read_csv(folder + '\\' + file + '.txt', sep=',', header=None)
+        except:
+            print(file + " is not accessible")
+            continue
+
+        print("read")
         curr_file.columns = file_col_headers["ut" + file]
-        curr_file = curr_file[vars_interest[file]]
+        print("here")
+
+        keep_columns = []
+        for column in file_col_headers["ut" + file]:
+            try:
+                if column in vars_interest[file]:
+                    print("var wanted")
+                    keep_columns.append(column)
+            except:
+                print("not interested- break")
+                break
+
+        if not keep_columns:
+            continue
+
+        print(curr_file.columns)
+        print(vars_interest[file])
+        print(keep_columns)
+        curr_file = curr_file[keep_columns]
+        print(curr_file.head)
+        print("vars")
         files_df.append(curr_file)
+        print("append")
 
 
 def add_headers(files_df, folder):
@@ -58,4 +87,6 @@ for folder in folders:
 #merge files on key
 #-----------------
 final_df = pd.concat(files_df)
-print(final_df.head)
+
+pd.to_csv("out.csv")
+
