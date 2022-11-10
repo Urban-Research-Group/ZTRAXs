@@ -5,7 +5,7 @@ folders = ["ZAsmt", "ZTrans"]
 ZAsmt = ["AdditionalPropertyAddress", "BKManagedSpecific", "Building", "BuildingAreas", "MailAddress", "Main", "Name", "SaleData", "TaxDistrict", "TaxExemption", "TypeConstruction", "Value"]
 ZTrans = ["BKManagedSpecific", "BuyerMailAddress", "BuyerName", "ForeclosureNameAddress", "Main", "SellerMailAddress", "SellerName", "SellerNameDescriptionCode"]
 
-vars = {"Main": ["ImportParcelID", "RowID", "TransID", "AssessorParcelNumber", "State", "County", "PropertyCity", "PropertyZip", "PropertyZip4", "PropertyAddressCensusTrackAndBlock",
+vars_interest = {"Main": ["ImportParcelID", "RowID", "TransID", "AssessorParcelNumber", "State", "County", "PropertyCity", "PropertyZip", "PropertyZip4", "PropertyAddressCensusTrackAndBlock",
             "OriginalPropertyFullStreetAddress", "PropertyAddressLatitude", "PropertyAddressLongitude", "PropertyZoningSourceCode", "TaxIDNumber", "TaxAmount", "TaxYear", "TaxDelinquencyFlag",
             "TaxDelinquencyAmount", "TaxDelinquencyYear", "LotSizeSquareFeet", "ValueCertDate", "DocumentDate", "DocumentTypeStndCode", "LoanAmount", "LoanAmountStndCode", "MaximumLoanAmount",
             "LoanTypeClosedOpenEndStndCode", "LoanTypeFutureAdvancedFlag", "LoanTypeProgramStndCode", "LoanRateTypeStndCode", "LoanDueDate", "LoanTermMonths", "LoanTermYears"],
@@ -17,11 +17,10 @@ vars = {"Main": ["ImportParcelID", "RowID", "TransID", "AssessorParcelNumber", "
             "SellerMailAddressLatitude", "SellerMailAddressLongitude", "SellerMailAddressCensusTrackAndBlock"], "BKManagedSpecific": ["DeedTransType"], "ForeClosureNameAddress": ["FCMailIndividualFullName",
             "FCMailNonIndividualName", "FCMailFullStreetAddress", "FCMailCity", "FCMailState", "FCMailZip", "FCMailZip4"]}
 
-def combine(files_df, folder):
-    #get column headers and the file they are associated with
-    #-----------------
- 
-    layout_file = pd.read_excel('Layout.xlsx')
+layouts = [asmt_layout, trans_layout]
+
+def add_headers_per_layout(files_df, folder, layout_file):
+    layout_file = pd.read_excel(layout_file + '.xlsx')
 
     #list of file names
     files = (layout_file["TableName"].to_numpy()).tolist()
@@ -38,16 +37,25 @@ def combine(files_df, folder):
     #add column headers to the files
     #-----------------
 
-    for file in ZAsmt:
+    for file in folder:
         curr_file = pd.read_csv(folder + '\\' + file + '.txt', sep='|', header=None)
         curr_file.columns = file_col_headers["ut" + file]
+        curr_file = curr_file[vars_interest[file]]
         files_df.append(curr_file)
+
+
+def add_headers(files_df, folder):
+    #get column headers and the file they are associated with
+    #-----------------
+    for layout_file in layouts:
+        add_headers_per_layout(files_df, folder, layout_file)
 
 
 for folder in folders:
     files_df = []
-    combine(files_df, folder)
+    add_headers(files_df, folder)
 
 #merge files on key
 #-----------------
 final_df = pd.concat(files_df)
+print(final_df.head)
